@@ -1,0 +1,16 @@
+# Ignorar o ambiente virtual Python
+venv/
+.venv/
+
+# Ignorar a pasta de dados e cache FAISS (grande e específico)
+data/
+__pycache__/
+
+# Arquivos de dependências e cache diversos
+*.log
+*.pyc
+.streamlit/
+
+# Se você gerar a base FAISS fora da pasta data
+*.faiss
+*.pkl
