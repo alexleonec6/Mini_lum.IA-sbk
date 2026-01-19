@@ -16,10 +16,10 @@ with st.sidebar:
     st.header("📊 Status do Sistema")
     st.markdown("""
     **Configuração:**
-    - 🤖 Modelo: Mistral (local, via Ollama)
-    - 📚 Documentos: Pasta (data)
+    -  Modelo: Mistral (local, via Ollama)
+    -  Documentos: Pasta (data)
     - 🔍 Busca semântica (FAISS)
-    - 🌐 Totalmente offline
+    -  Totalmente offline
     """)
 
     if st.button("🔄 Recarregar Sistema"):
@@ -29,14 +29,14 @@ with st.sidebar:
         st.rerun()
 
 if "chain" not in st.session_state:
-    with st.spinner("🚀 Inicializando sistema IA... Isso pode levar alguns segundos (dependendo do tamanho dos documentos)."):
+    with st.spinner(" Inicializando sistema IA... Isso pode levar alguns segundos (dependendo do tamanho dos documentos)."):
         try:
             # Tenta criar e carregar a chain RAG
             st.session_state.chain = criar_chain()
-            st.success("✅ Sistema carregado com sucesso!")
+            st.success(" Sistema carregado com sucesso!")
         except Exception as e:
             # Exibe erro e dicas de solução de problemas
-            st.error(f"❌ Erro de inicialização: {str(e)}")
+            st.error(f" Erro de inicialização: {str(e)}")
             st.info("""
             **Para resolver:**
             1. Verifique se o **Ollama está rodando** em outro terminal: `ollama serve`
@@ -44,25 +44,25 @@ if "chain" not in st.session_state:
             3. Verifique se a **pasta 'data'** existe e contém arquivos PDF ou TXT.
             """)
 
-st.subheader("💬 Faça sua pergunta sobre os documentos")
+st.subheader(" Faça sua pergunta sobre os documentos")
 
 pergunta = st.text_input(
     "Digite sua pergunta:",
     placeholder="Ex: Quais são as políticas de férias? O que diz o documento X sobre o processo Y?"
 )
 
-if st.button("🔍 Buscar Resposta", type="primary") and pergunta:
+if st.button(" Buscar Resposta", type="primary") and pergunta:
     if "chain" not in st.session_state:
         st.error("Sistema não carregado. Verifique a seção de status acima.")
     else:
-        with st.spinner("🔍 Consultando documentos e gerando resposta..."):
+        with st.spinner(" Consultando documentos e gerando resposta..."):
             try:
                 # Usa .invoke() para LangChain 0.1.x
                 resultado = st.session_state.chain.invoke({"query": pergunta}) 
-                st.markdown("### 🧠 Resposta:")
+                st.markdown("###  Resposta:")
                 st.write(resultado["result"])
 
-                with st.expander("📚 Ver documentos consultados"):
+                with st.expander(" Ver documentos consultados"):
                     if resultado.get("source_documents"):
                         st.markdown("Estes são os trechos que a IA utilizou como contexto:")
                         for i, doc in enumerate(resultado["source_documents"][:3], 1):
