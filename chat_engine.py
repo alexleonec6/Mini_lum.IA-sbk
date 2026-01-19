@@ -25,26 +25,26 @@ def carregar_docs():
     if not os.path.exists(pasta):
         # Cria a pasta 'data' se não existir para evitar erros
         os.makedirs(pasta)
-        print(f"❌ Pasta '{pasta}' não encontrada e foi criada. Adicione documentos!")
+        print(f" Pasta '{pasta}' não encontrada e foi criada. Adicione documentos!")
         return docs
 
-    print("📁 Carregando documentos da pasta 'data'...")
+    print(" Carregando documentos da pasta 'data'...")
 
     for arquivo in os.listdir(pasta):
         caminho = os.path.join(pasta, arquivo)
         try:
             if arquivo.endswith(".pdf"):
-                print(f"📄 Carregando PDF: {arquivo}")
+                print(f" Carregando PDF: {arquivo}")
                 loader = PyPDFLoader(caminho)
                 documentos = loader.load()
                 for doc in documentos:
                     # Adiciona a fonte ao metadata
                     doc.metadata["fonte"] = arquivo
                 docs.extend(documentos)
-                print(f"✅ PDF carregado: {arquivo} - {len(documentos)} páginas")
+                print(f" PDF carregado: {arquivo} - {len(documentos)} páginas")
 
             elif arquivo.endswith(".txt"):
-                print(f"📝 Carregando TXT: {arquivo}")
+                print(f" Carregando TXT: {arquivo}")
                 # Garante o encoding correto
                 loader = TextLoader(caminho, encoding='utf-8')
                 documentos = loader.load()
@@ -52,18 +52,18 @@ def carregar_docs():
                     # Adiciona a fonte ao metadata
                     doc.metadata["fonte"] = arquivo
                 docs.extend(documentos)
-                print(f"✅ TXT carregado: {arquivo}")
+                print(f" TXT carregado: {arquivo}")
 
         except Exception as e:
             # Captura erros específicos de carregamento (ex: PDF corrompido)
             print(f"❌ Erro ao carregar {arquivo}: {str(e)}")
 
-    print(f"🎯 Total de documentos carregados: {len(docs)}")
+    print(f" Total de documentos carregados: {len(docs)}")
     return docs
 
 def criar_chain():
     """Cria e configura a Chain de QA (Perguntas e Respostas) com LangChain e Ollama."""
-    print("🔹 Iniciando configuração do sistema...")
+    print(" Iniciando configuração do sistema...")
 
     # 1. Verificação do Ollama
     if not verificar_ollama():
@@ -76,25 +76,25 @@ def criar_chain():
         raise Exception("Nenhum documento encontrado na pasta 'data'. Adicione arquivos PDF ou TXT.")
 
     # 3. Configuração de Embeddings e Vetorização
-    print("🔹 Configurando embeddings...")
+    print(" Configurando embeddings...")
     # Garante que o modelo está disponível ou usa um fallback
     embeddings = OllamaEmbeddings(model="mistral") 
-    print("✅ Embeddings configurados")
+    print(" Embeddings configurados")
 
-    print("🔹 Criando base de conhecimento (FAISS)...")
+    print(" Criando base de conhecimento (FAISS)...")
     db = FAISS.from_documents(docs, embeddings)
     # Configura o Retriever para buscar os 3 documentos mais relevantes
     retriever = db.as_retriever(search_kwargs={"k": 3})
-    print("✅ Base de conhecimento criada")
+    print(" Base de conhecimento criada")
 
     # 4. Conexão com o LLM (Mistral)
-    print("🔹 Conectando ao modelo Mistral...")
+    print(" Conectando ao modelo Mistral...")
     # Baixa temperatura para respostas mais factuais
     llm = Ollama(model="mistral", temperature=0.1) 
-    print("✅ Modelo Mistral conectado")
+    print(" Modelo Mistral conectado")
 
     # 5. Criação da Chain RAG
-    print("🔹 Criando sistema de perguntas e respostas (RetrievalQA)...")
+    print(" Criando sistema de perguntas e respostas (RetrievalQA)...")
     chain = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff", # Coloca todo o contexto em um prompt só
@@ -102,7 +102,7 @@ def criar_chain():
         return_source_documents=True # Retorna as fontes para o usuário
     )
 
-    print("✅ ✅ Sistema pronto para uso!")
+    print(" Sistema pronto para uso!")
     return chain
 
 if __name__ == "__main__":
