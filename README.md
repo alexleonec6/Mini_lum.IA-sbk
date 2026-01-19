@@ -1,8 +1,8 @@
-🧠 Mini-lum.IA: Assistente RAG (Retrieval-Augmented Generation) Local
+Mini-lum.IA: Assistente RAG (Retrieval-Augmented Generation) Local
 
 Este projeto implementa um sistema de Q&A (Perguntas e Respostas) baseado na arquitetura RAG (Retrieval-Augmented Generation). Ele permite que a inteligência artificial responda perguntas complexas consultando exclusivamente uma base de conhecimento privada (seus próprios documentos). A solução é construída para operar de forma totalmente local e privada, garantindo total controle sobre os dados e o LLM.
 
-🌟 Destaques do Projeto
+Destaques do Projeto
 
 Arquitetura RAG Completa: Implementação de um pipeline robusto que inclui carregamento de documentos, chunking, criação de embeddings e busca por similaridade semântica.
 
@@ -12,7 +12,7 @@ Privacidade e Autonomia: Toda a operação é realizada na máquina local, sem d
 
 Interface Amigável: Desenvolvido com Streamlit para uma interface de chat interativa e fácil de usar.
 
-🛠️ Tecnologias Utilizadas
+Tecnologias Utilizadas
 
 Categoria
 
@@ -50,7 +50,7 @@ Streamlit
 
 Criação da interface de usuário e da lógica de sessão do chat.
 
-🚀 Instalação e Configuração
+Instalação e Configuração
 
 1. Pré-requisitos
 
@@ -92,7 +92,7 @@ Instalar Dependências:
 pip install -r requirements.txt
 
 
-📚 Uso
+Uso
 
 1. Adicionar Documentos
 
@@ -107,12 +107,12 @@ streamlit run app.py
 
 O aplicativo será aberto automaticamente no seu navegador. A primeira execução irá processar e vetorizar seus documentos, criando a base FAISS no disco (o que pode levar alguns minutos, dependendo do volume de dados).
 
-🗂 Estrutura do Projeto
+Estrutura do Projeto
 
 Mini_lum.IA-sbk/
-├── data/                       # <-- Coloque seus documentos aqui (ignorada pelo Git)
-├── venv/                       # Ambiente virtual Python (ignorada pelo Git)
-├── .gitignore                  # Regras para ignorar 'venv/', 'data/' e cache
-├── requirements.txt            # Lista de dependências Python (streamlit, langchain, faiss, etc.)
-├── app.py                      # Arquivo principal do Streamlit (Interface e lógica de sessão)
-└── chat_engine.py              # Lógica central do RAG (carregamento, indexação FAISS e pipeline de consulta)
+├── data/                       
+├── venv/                       
+├── .gitignore                  
+├── requirements.txt            
+├── app.py                      
+└── chat_engine.py           
