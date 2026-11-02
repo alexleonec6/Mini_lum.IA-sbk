@@ -1,0 +1,9 @@
+Mini Lum.IA - Assistente RAG Local
+
+Este é um documento de exemplo para demonstrar o funcionamento do assistente RAG local.
+
+O Mini Lum.IA utiliza o modelo Mistral rodando via Ollama e uma base vetorial FAISS para realizar busca semântica em arquivos locais (.pdf e .txt).
+
+Para adicionar seus próprios documentos à base de conhecimento:
+1. Adicione os arquivos PDF ou TXT na pasta data/
+2. Clique no botão 'Recarregar Sistema' na barra lateral da aplicação.
