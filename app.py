@@ -1,5 +1,4 @@
 import streamlit as st
-# Garante que a importação do engine está correta
 from chat_engine import criar_chain
 
 st.set_page_config(
@@ -16,70 +15,67 @@ with st.sidebar:
     st.header("📊 Status do Sistema")
     st.markdown("""
     **Configuração:**
-    -  Modelo: Mistral (local, via Ollama)
-    -  Documentos: Pasta (data)
-    - 🔍 Busca semântica (FAISS)
-    -  Totalmente offline
+    - Modelo: Mistral (local via Ollama)
+    - Documentos: Pasta `data/`
+    - Busca semântica: FAISS
+    - Execução: 100% offline
     """)
 
     if st.button("🔄 Recarregar Sistema"):
-        # Limpa o cache e força a recriação da chain
         if "chain" in st.session_state:
             del st.session_state.chain
         st.rerun()
 
 if "chain" not in st.session_state:
-    with st.spinner(" Inicializando sistema IA... Isso pode levar alguns segundos (dependendo do tamanho dos documentos)."):
+    with st.spinner("Inicializando o assistente..."):
         try:
-            # Tenta criar e carregar a chain RAG
             st.session_state.chain = criar_chain()
-            st.success(" Sistema carregado com sucesso!")
+            st.success("Sistema carregado com sucesso!")
         except Exception as e:
-            # Exibe erro e dicas de solução de problemas
-            st.error(f" Erro de inicialização: {str(e)}")
+            st.error(f"Erro ao inicializar: {str(e)}")
             st.info("""
-            **Para resolver:**
-            1. Verifique se o **Ollama está rodando** em outro terminal: `ollama serve`
-            2. Confirme se o **modelo Mistral está instalado**: `ollama pull mistral`
-            3. Verifique se a **pasta 'data'** existe e contém arquivos PDF ou TXT.
+            **Dicas para resolver:**
+            1. Verifique se o Ollama está rodando no terminal (`ollama serve`)
+            2. Confirme se o modelo foi baixado (`ollama pull mistral`)
+            3. Coloque arquivos PDF ou TXT na pasta `data/`
             """)
 
-st.subheader(" Faça sua pergunta sobre os documentos")
+st.subheader("Faça sua pergunta sobre os documentos")
 
-pergunta = st.text_input(
-    "Digite sua pergunta:",
-    placeholder="Ex: Quais são as políticas de férias? O que diz o documento X sobre o processo Y?"
-)
+with st.form("pergunta_form", clear_on_submit=False):
+    pergunta = st.text_input(
+        "Digite sua pergunta:",
+        placeholder="Ex: O que o documento diz sobre o processo?"
+    )
+    enviar = st.form_submit_button("Buscar Resposta", type="primary")
 
-if st.button(" Buscar Resposta", type="primary") and pergunta:
+if enviar and pergunta:
     if "chain" not in st.session_state:
-        st.error("Sistema não carregado. Verifique a seção de status acima.")
+        st.error("O sistema ainda não foi carregado. Verifique os avisos acima.")
     else:
-        with st.spinner(" Consultando documentos e gerando resposta..."):
+        with st.spinner("Consultando documentos..."):
             try:
-                # Usa .invoke() para LangChain 0.1.x
-                resultado = st.session_state.chain.invoke({"query": pergunta}) 
-                st.markdown("###  Resposta:")
+                resultado = st.session_state.chain.invoke({"query": pergunta})
+                st.markdown("### Resposta:")
                 st.write(resultado["result"])
 
-                with st.expander(" Ver documentos consultados"):
-                    if resultado.get("source_documents"):
-                        st.markdown("Estes são os trechos que a IA utilizou como contexto:")
-                        for i, doc in enumerate(resultado["source_documents"][:3], 1):
-                            fonte = doc.metadata.get("fonte", "N/A")
-                            # Usa get('page', 'N/A') se estiver usando PyPDFLoader
-                            pagina = doc.metadata.get('page', 'N/A')
-                            st.markdown(f"**Documento {i}:** {fonte} (Pág: {pagina})") 
-                            
-                            # Limita o tamanho do preview
-                            conteudo = doc.page_content.replace('\n', ' ')
-                            conteudo_preview = conteudo[:250] + "..." if len(conteudo) > 250 else conteudo
-                            st.text(conteudo_preview)
+                with st.expander("Ver trechos consultados"):
+                    docs = resultado.get("source_documents", [])
+                    if docs:
+                        for i, doc in enumerate(docs[:3], 1):
+                            fonte = doc.metadata.get("fonte", "Arquivo")
+                            pagina = doc.metadata.get("page")
+                            info_pag = f" (Pág. {pagina + 1})" if isinstance(pagina, int) else ""
+                            st.markdown(f"**Documento {i}:** `{fonte}`{info_pag}")
+
+                            conteudo = doc.page_content.replace("\n", " ").strip()
+                            preview = conteudo[:250] + "..." if len(conteudo) > 250 else conteudo
+                            st.text(preview)
                             st.markdown("---")
                     else:
-                        st.info("Nenhum documento específico foi consultado (a resposta pode ser conhecimento geral do modelo).")
+                        st.info("Nenhum trecho específico foi recuperado.")
             except Exception as e:
-                st.error(f"Erro ao processar a consulta. Verifique o console para mais detalhes. Erro: {str(e)}")
+                st.error(f"Erro ao processar a pergunta: {str(e)}")
 
 st.markdown("---")
-st.markdown("💡 **Dica:** Faça perguntas específicas sobre o conteúdo dos documentos para melhores respostas. Lembre-se de que o **Ollama deve estar ativo** para que o sistema funcione.")
+st.caption("Mini Lum.IA — Executado localmente com Ollama e LangChain.")
