@@ -1,119 +1,95 @@
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.vectorstores import FAISS
-# CORREÇÃO: Usando a importação clássica que funciona na versão 0.1.20
-from langchain.chains import RetrievalQA
-from langchain_community.llms import Ollama
 import os
 import requests
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+from langchain_community.llms import Ollama
 
 def verificar_ollama():
-    """Verifica se o Ollama está rodando no endereço padrão."""
+    # checa se o ollama tá rodando localmente
     try:
-        # Tenta acessar o endpoint de tags para verificar o status
-        response = requests.get("http://localhost:11434/api/tags", timeout=10)
+        response = requests.get("http://localhost:11434/api/tags", timeout=5)
         return response.status_code == 200
     except requests.exceptions.RequestException:
-        # Captura erros de conexão (Ollama não está servindo)
         return False
 
 def carregar_docs():
-    """Carrega documentos PDF e TXT da pasta 'data'."""
-    docs = []
     pasta = "data"
+    docs = []
 
     if not os.path.exists(pasta):
-        # Cria a pasta 'data' se não existir para evitar erros
         os.makedirs(pasta)
-        print(f" Pasta '{pasta}' não encontrada e foi criada. Adicione documentos!")
-        return docs
 
-    print(" Carregando documentos da pasta 'data'...")
+    arquivos = [f for f in os.listdir(pasta) if f.endswith((".pdf", ".txt"))]
 
-    for arquivo in os.listdir(pasta):
+    # se não tiver nenhum arquivo, cria um exemplo básico pra não quebrar a aplicação
+    if not arquivos:
+        exemplo_path = os.path.join(pasta, "exemplo.txt")
+        with open(exemplo_path, "w", encoding="utf-8") as f:
+            f.write(
+                "Mini Lum.IA - Assistente RAG Local\n\n"
+                "Este é um documento de teste inicial do sistema.\n"
+                "Para fazer perguntas sobre seus documentos, coloque seus arquivos PDF ou TXT dentro da pasta 'data' "
+                "e recarregue o assistente pelo menu lateral."
+            )
+        arquivos = ["exemplo.txt"]
+
+    for arquivo in arquivos:
         caminho = os.path.join(pasta, arquivo)
         try:
             if arquivo.endswith(".pdf"):
-                print(f" Carregando PDF: {arquivo}")
                 loader = PyPDFLoader(caminho)
-                documentos = loader.load()
-                for doc in documentos:
-                    # Adiciona a fonte ao metadata
-                    doc.metadata["fonte"] = arquivo
-                docs.extend(documentos)
-                print(f" PDF carregado: {arquivo} - {len(documentos)} páginas")
-
+                carregados = loader.load()
             elif arquivo.endswith(".txt"):
-                print(f" Carregando TXT: {arquivo}")
-                # Garante o encoding correto
-                loader = TextLoader(caminho, encoding='utf-8')
-                documentos = loader.load()
-                for doc in documentos:
-                    # Adiciona a fonte ao metadata
-                    doc.metadata["fonte"] = arquivo
-                docs.extend(documentos)
-                print(f" TXT carregado: {arquivo}")
+                loader = TextLoader(caminho, encoding="utf-8")
+                carregados = loader.load()
+            else:
+                continue
 
+            for doc in carregados:
+                doc.metadata["fonte"] = arquivo
+            docs.extend(carregados)
         except Exception as e:
-            # Captura erros específicos de carregamento (ex: PDF corrompido)
-            print(f"❌ Erro ao carregar {arquivo}: {str(e)}")
+            print(f"Erro ao carregar o arquivo {arquivo}: {e}")
 
-    print(f" Total de documentos carregados: {len(docs)}")
     return docs
 
 def criar_chain():
-    """Cria e configura a Chain de QA (Perguntas e Respostas) com LangChain e Ollama."""
-    print(" Iniciando configuração do sistema...")
-
-    # 1. Verificação do Ollama
+    # 1. verifica se o serviço do ollama tá ativo
     if not verificar_ollama():
-        raise Exception("Ollama não está rodando. Execute 'ollama serve' em outro terminal.")
+        raise Exception("Ollama não está rodando. Inicie com 'ollama serve' no terminal.")
 
-    # 2. Carregamento de Documentos
+    # 2. carrega os documentos da pasta data
     docs = carregar_docs()
-
     if not docs:
         raise Exception("Nenhum documento encontrado na pasta 'data'. Adicione arquivos PDF ou TXT.")
 
-    # 3. Configuração de Embeddings e Vetorização
-    print(" Configurando embeddings...")
-    # Garante que o modelo está disponível ou usa um fallback
-    embeddings = OllamaEmbeddings(model="mistral") 
-    print(" Embeddings configurados")
+    # 3. divide os textos em chunks menores pra caber no modelo
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    chunks = splitter.split_documents(docs)
 
-    print(" Criando base de conhecimento (FAISS)...")
-    db = FAISS.from_documents(docs, embeddings)
-    # Configura o Retriever para buscar os 3 documentos mais relevantes
+    # 4. gera os embeddings e o índice vetorial no faiss
+    embeddings = OllamaEmbeddings(model="mistral")
+    db = FAISS.from_documents(chunks, embeddings)
     retriever = db.as_retriever(search_kwargs={"k": 3})
-    print(" Base de conhecimento criada")
 
-    # 4. Conexão com o LLM (Mistral)
-    print(" Conectando ao modelo Mistral...")
-    # Baixa temperatura para respostas mais factuais
-    llm = Ollama(model="mistral", temperature=0.1) 
-    print(" Modelo Mistral conectado")
-
-    # 5. Criação da Chain RAG
-    print(" Criando sistema de perguntas e respostas (RetrievalQA)...")
+    # 5. conecta no modelo mistral e cria a chain de QA
+    llm = Ollama(model="mistral", temperature=0.1)
     chain = RetrievalQA.from_chain_type(
         llm=llm,
-        chain_type="stuff", # Coloca todo o contexto em um prompt só
+        chain_type="stuff",
         retriever=retriever,
-        return_source_documents=True # Retorna as fontes para o usuário
+        return_source_documents=True
     )
 
-    print(" Sistema pronto para uso!")
     return chain
 
 if __name__ == "__main__":
-    # Bloco de teste
     try:
+        print("Iniciando teste da chain...")
         chain = criar_chain()
-        print("\nSucesso! O sistema foi carregado sem erros.")
-        # Se desejar testar a chain:
-        # pergunta = "Quais são os principais pontos do primeiro documento?"
-        # resultado = chain.invoke({"query": pergunta})
-        # print(f"\nPergunta: {pergunta}")
-        # print(f"Resposta: {resultado['result']}")
+        print("Chain criada com sucesso!")
     except Exception as e:
-        print(f"\nFALHA na inicialização: {e}")
+        print(f"Erro no teste: {e}")
